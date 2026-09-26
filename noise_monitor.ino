@@ -1,3 +1,4 @@
+
 const int SOUND_SENSOR = A0;
 
 const int GREEN_LED = 8;
@@ -6,6 +7,50 @@ const int RED_LED = 10;
 
 const int LOW_THRESHOLD = 200;
 const int HIGH_THRESHOLD = 500;
+const int LOW_HYSTERESIS = 20;
+const int HIGH_HYSTERESIS = 20;
+
+enum NoiseLevel {
+    LOW,
+    MODERATE,
+    HIGH
+};
+
+NoiseLevel currentLevel = LOW;
+
+void updateNoiseLevel(int soundLevel) {
+    switch (currentLevel) {
+        case LOW:
+            if (soundLevel >= HIGH_THRESHOLD) {
+                currentLevel = HIGH;
+            } else if (soundLevel >= LOW_THRESHOLD) {
+                currentLevel = MODERATE;
+            }
+            break;
+
+        case MODERATE:
+            if (soundLevel >= HIGH_THRESHOLD) {
+                currentLevel = HIGH;
+            } else if (soundLevel < LOW_THRESHOLD - LOW_HYSTERESIS) {
+                currentLevel = LOW;
+            }
+            break;
+
+        case HIGH:
+            if (soundLevel < LOW_THRESHOLD - LOW_HYSTERESIS) {
+                currentLevel = LOW;
+            } else if (soundLevel < HIGH_THRESHOLD - HIGH_HYSTERESIS) {
+                currentLevel = MODERATE;
+            }
+            break;
+    }
+}
+
+void updateLEDs() {
+    digitalWrite(GREEN_LED, currentLevel == LOW ? HIGH : LOW);
+    digitalWrite(YELLOW_LED, currentLevel == MODERATE ? HIGH : LOW);
+    digitalWrite(RED_LED, currentLevel == HIGH ? HIGH : LOW);
+}
 
 void setup() {
     pinMode(GREEN_LED, OUTPUT);
@@ -18,25 +63,20 @@ void setup() {
 void loop() {
     int soundLevel = analogRead(SOUND_SENSOR);
 
-    digitalWrite(GREEN_LED, LOW);
-    digitalWrite(YELLOW_LED, LOW);
-    digitalWrite(RED_LED, LOW);
-
-    if (soundLevel < LOW_THRESHOLD) {
-        digitalWrite(GREEN_LED, HIGH);
-        Serial.println("Noise Level: LOW");
-    }
-    else if (soundLevel < HIGH_THRESHOLD) {
-        digitalWrite(YELLOW_LED, HIGH);
-        Serial.println("Noise Level: MODERATE");
-    }
-    else {
-        digitalWrite(RED_LED, HIGH);
-        Serial.println("Noise Level: HIGH");
-    }
+    updateNoiseLevel(soundLevel);
+    updateLEDs();
 
     Serial.print("Sensor Value: ");
-    Serial.println(soundLevel);
+    Serial.print(soundLevel);
+    Serial.print(" | Noise Level: ");
+
+    if (currentLevel == LOW) {
+        Serial.println("LOW");
+    } else if (currentLevel == MODERATE) {
+        Serial.println("MODERATE");
+    } else {
+        Serial.println("HIGH");
+    }
 
     delay(200);
 }
