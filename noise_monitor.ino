@@ -1,4 +1,3 @@
-
 const int SOUND_SENSOR = A0;
 
 const int GREEN_LED = 8;
@@ -9,6 +8,9 @@ const int LOW_THRESHOLD = 200;
 const int HIGH_THRESHOLD = 500;
 const int LOW_HYSTERESIS = 20;
 const int HIGH_HYSTERESIS = 20;
+
+const unsigned long SAMPLE_INTERVAL = 200;
+unsigned long previousMillis = 0;
 
 enum NoiseLevel {
     LOW,
@@ -58,25 +60,31 @@ void setup() {
     pinMode(RED_LED, OUTPUT);
 
     Serial.begin(9600);
+
+    updateLEDs();
 }
 
 void loop() {
-    int soundLevel = analogRead(SOUND_SENSOR);
+    unsigned long currentMillis = millis();
 
-    updateNoiseLevel(soundLevel);
-    updateLEDs();
+    if (currentMillis - previousMillis >= SAMPLE_INTERVAL) {
+        previousMillis = currentMillis;
 
-    Serial.print("Sensor Value: ");
-    Serial.print(soundLevel);
-    Serial.print(" | Noise Level: ");
+        int soundLevel = analogRead(SOUND_SENSOR);
 
-    if (currentLevel == LOW) {
-        Serial.println("LOW");
-    } else if (currentLevel == MODERATE) {
-        Serial.println("MODERATE");
-    } else {
-        Serial.println("HIGH");
+        updateNoiseLevel(soundLevel);
+        updateLEDs();
+
+        Serial.print("Sensor Value: ");
+        Serial.print(soundLevel);
+        Serial.print(" | Noise Level: ");
+
+        if (currentLevel == LOW) {
+            Serial.println("LOW");
+        } else if (currentLevel == MODERATE) {
+            Serial.println("MODERATE");
+        } else {
+            Serial.println("HIGH");
+        }
     }
-
-    delay(200);
 }
